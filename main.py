@@ -80,6 +80,12 @@ Exemples:
         help='Afficher ce qui serait cloné sans envoyer les messages'
     )
     
+    parser.add_argument(
+        '--use-bot',
+        action='store_true',
+        help='Utiliser un bot pour envoyer les messages (nécessite TELEGRAM_BOT_TOKEN)'
+    )
+    
     return parser.parse_args()
 
 
@@ -100,6 +106,8 @@ async def main():
             config.rate_limit_delay = args.delay
         if args.batch_size is not None:
             config.batch_size = args.batch_size
+        if hasattr(args, 'use_bot') and args.use_bot:
+            config.use_bot_for_sending = True
             
         # Validation de la configuration
         if not config.validate():
@@ -115,6 +123,7 @@ async def main():
         logger.info(f"Limite de Messages: {args.limit or 'Aucune limite'}")
         logger.info(f"Mode Reprise: {'Activé' if args.resume else 'Désactivé'}")
         logger.info(f"Mode Test: {'Activé' if args.dry_run else 'Désactivé'}")
+        logger.info(f"Mode Bot: {'Activé' if config.use_bot_for_sending else 'Désactivé'}")
         
         # Démarrage du processus de clonage
         start_time = datetime.now()

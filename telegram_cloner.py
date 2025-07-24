@@ -29,6 +29,7 @@ class TelegramCloner:
         self.config = config
         self.logger = logger
         self.client: Optional[TelegramClient] = None
+        self.bot_client: Optional[TelegramClient] = None
         
         # Progress tracking
         self.progress_data: Dict[str, Any] = {}
@@ -70,7 +71,17 @@ class TelegramCloner:
             )
             
             await self.client.start()
-            self.logger.info("Connecté à Telegram")
+            self.logger.info("Connecté à Telegram avec votre compte")
+            
+            # Initialiser le client bot si configuré
+            if self.config.use_bot_for_sending:
+                self.bot_client = TelegramClient(
+                    f"{self.config.session_name}_bot",
+                    self.config.api_id,
+                    self.config.api_hash
+                )
+                await self.bot_client.start(bot_token=self.config.bot_token)
+                self.logger.info("Bot connecté pour l'envoi des messages")
             
             # Obtenir les entités source et cible
             source_entity = await self._get_entity(source_channel)
@@ -127,6 +138,9 @@ class TelegramCloner:
             if self.client:
                 await self.client.disconnect()
                 self.logger.info("Déconnecté de Telegram")
+            if self.bot_client:
+                await self.bot_client.disconnect()
+                self.logger.info("Bot déconnecté")
     
     async def _get_entity(self, channel_identifier: str):
         """Get Telegram entity for channel."""
@@ -256,38 +270,75 @@ class TelegramCloner:
         return False
     
     async def _send_message(self, message: Message, target_entity):
-        """Send a single message to target channel."""
-        if not self.client:
-            raise Exception("Telegram client not initialized")
+        """Envoie un message unique vers le canal cible."""
+        # Choisir le client approprié pour l'envoi
+        send_client = self.bot_client if self.config.use_bot_for_sending else self.client
+        
+        if not send_client:
+            raise Exception("Client d'envoi non initialisé")
             
-        # Get message text safely
+        # Obtenir le texte du message de manière sécurisée
         message_text = getattr(message, 'message', '') or getattr(message, 'text', '')
         
-        if message_text and not message.media:
-            # Text only message
-            await self.client.send_message(target_entity, message_text)
-        elif message.media:
-            # Message with media
-            if self.config.download_media:
-                try:
-                    await self.client.send_file(
-                        target_entity,
-                        message.media,
-                        caption=message_text or "",
-                        parse_mode='html'
-                    )
-                except Exception as e:
-                    self.logger.warning(f"Failed to send media for message {message.id}: {str(e)}")
-                    # Fallback to text only if media fails
+        try:
+            if message_text and not message.media:
+                # Message texte uniquement
+                await send_client.send_message(target_entity, message_text)
+                self.logger.debug(f"Message texte envoyé via {'bot' if self.config.use_bot_for_sending else 'compte utilisateur'}")
+                
+            elif message.media:
+                # Message avec média
+                if self.config.download_media:
+                    try:
+                        await send_client.send_file(
+                            target_entity,
+                            message.media,
+                            caption=message_text or "",
+                            parse_mode='html'
+                        )
+                        self.logger.debug(f"Message média envoyé via {'bot' if self.config.use_bot_for_sending else 'compte utilisateur'}")
+                        
+                    except Exception as e:
+                        self.logger.warning(f"Échec envoi média pour message {message.id}: {str(e)}")
+                        # Fallback vers texte uniquement si média échoue
+                        if message_text:
+                            await send_client.send_message(target_entity, message_text)
+                            self.logger.debug("Fallback: texte envoyé sans média")
+                else:
+                    # Envoyer uniquement le texte si téléchargement média désactivé
                     if message_text:
-                        await self.client.send_message(target_entity, message_text)
+                        await send_client.send_message(target_entity, message_text)
+                        self.logger.debug("Texte envoyé (média ignoré)")
             else:
-                # Send only text if media download is disabled
-                if message_text:
-                    await self.client.send_message(target_entity, message_text)
-        else:
-            # Skip empty messages
-            self.logger.debug(f"Skipping empty message {message.id}")
+                # Ignorer les messages vides
+                self.logger.debug(f"Message vide {message.id} ignoré")
+                
+        except Exception as e:
+            # Si le bot échoue, essayer avec le compte utilisateur en fallback
+            if self.config.use_bot_for_sending and self.client:
+                self.logger.warning(f"Bot échoué, tentative avec compte utilisateur: {str(e)}")
+                await self._send_message_with_user_client(message, target_entity, message_text)
+            else:
+                raise e
+    
+    async def _send_message_with_user_client(self, message: Message, target_entity, message_text: str):
+        """Méthode de fallback pour envoyer avec le compte utilisateur."""
+        try:
+            if message_text and not message.media:
+                await self.client.send_message(target_entity, message_text)
+            elif message.media and self.config.download_media:
+                await self.client.send_file(
+                    target_entity,
+                    message.media,
+                    caption=message_text or "",
+                    parse_mode='html'
+                )
+            elif message_text:
+                await self.client.send_message(target_entity, message_text)
+            self.logger.debug("Message envoyé avec succès via compte utilisateur (fallback)")
+        except Exception as e:
+            self.logger.error(f"Échec fallback compte utilisateur: {str(e)}")
+            raise e
     
     async def _dry_run_analysis(self, messages: List[Message]):
         """Analyze messages for dry run."""

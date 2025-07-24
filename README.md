@@ -5,6 +5,7 @@ Un outil amélioré de clonage de chaînes Telegram avec gestion d'erreurs compl
 ## Fonctionnalités
 
 - **Clonage Complet de Messages**: Clone les messages texte, fichiers médias et contenu mixte
+- **Mode Hybride**: Lire avec votre compte, envoyer via un bot (recommandé pour les gros canaux)
 - **Gestion d'Erreurs et Récupération**: Gestion d'erreurs robuste avec mécanismes de retry automatiques
 - **Limitation de Taux**: Limitation de taux intégrée pour respecter les limites de l'API Telegram
 - **Suivi de Progression**: Reprendre les transferts interrompus là où ils se sont arrêtés
@@ -38,6 +39,12 @@ TELEGRAM_API_HASH=votre_api_hash_ici
 
 # Optionnel - Personnalisez selon vos besoins
 TELEGRAM_SESSION_NAME=clonage_telegram
+
+# Configuration Bot (optionnel - recommandé pour gros canaux)
+TELEGRAM_BOT_TOKEN=votre_bot_token_ici
+USE_BOT_FOR_SENDING=false
+
+# Autres paramètres
 RATE_LIMIT_DELAY=1.0
 BATCH_SIZE=10
 MAX_RETRIES=3
@@ -48,3 +55,33 @@ PROGRESS_FILE=progression_clonage.json
 SAVE_PROGRESS_INTERVAL=50
 DOWNLOAD_MEDIA=true
 MEDIA_TIMEOUT=300
+```
+
+## Mode Hybride (Lecture + Bot)
+
+Cette fonctionnalité innovante permet de :
+- **Lire les messages** avec votre compte personnel (accès complet aux chaînes privées)
+- **Envoyer les messages** via un bot (moins de restrictions, plus stable pour gros volumes)
+
+### Avantages du mode hybride :
+1. **Accès étendu** : Votre compte peut lire les chaînes privées
+2. **Stabilité** : Le bot gère mieux les gros volumes d'envois
+3. **Sécurité** : Moins de risque de restrictions sur votre compte personnel
+4. **Fallback automatique** : Si le bot échoue, l'outil utilise votre compte
+
+### Configuration du bot :
+1. Créez un bot avec @BotFather sur Telegram
+2. Copiez le token dans `TELEGRAM_BOT_TOKEN`
+3. Ajoutez le bot comme **administrateur** du canal cible
+4. Activez `USE_BOT_FOR_SENDING=true` ou utilisez `--use-bot`
+
+## Utilisation
+
+### Mode Standard (compte uniquement) :
+```bash
+python main.py --source @chaine_source --target @chaine_cible
+```
+
+### Mode Hybride (recommandé) :
+```bash
+python main.py --source @chaine_source --target @chaine_cible --use-bot

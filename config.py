@@ -27,6 +27,10 @@ class Config:
         self.api_hash: Optional[str] = os.getenv('TELEGRAM_API_HASH')
         self.session_name: str = os.getenv('TELEGRAM_SESSION_NAME', 'telegram_cloner')
         
+        # Bot Configuration (optionnel)
+        self.bot_token: Optional[str] = os.getenv('TELEGRAM_BOT_TOKEN')
+        self.use_bot_for_sending: bool = self._get_bool_env('USE_BOT_FOR_SENDING', False)
+        
         # Rate Limiting Configuration
         self.rate_limit_delay: float = self._get_float_env('RATE_LIMIT_DELAY', 1.0)
         self.batch_size: int = self._get_int_env('BATCH_SIZE', 10) or 10
@@ -84,6 +88,9 @@ class Config:
         
         if not self.api_hash:
             errors.append("TELEGRAM_API_HASH is required")
+        
+        if self.use_bot_for_sending and not self.bot_token:
+            errors.append("TELEGRAM_BOT_TOKEN is required when USE_BOT_FOR_SENDING is enabled")
         
         if self.rate_limit_delay < 0:
             errors.append("RATE_LIMIT_DELAY must be non-negative")
