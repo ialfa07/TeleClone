@@ -1,0 +1,37 @@
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["openssl"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Telegram Cloner Setup"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "telegram_cloner_test"
+
+[[workflows.workflow]]
+name = "Telegram Cloner Setup"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install telethon python-dotenv && echo \"Dependencies installed successfully. To use the application, you need to:\" && echo \"1. Copy .env.example to .env\" && echo \"2. Add your Telegram API credentials\" && echo \"3. Run: python main.py --source @source_channel --target @target_channel\""
+
+[[workflows.workflow]]
+name = "telegram_cloner_test"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install telethon python-dotenv && python main.py --help"
