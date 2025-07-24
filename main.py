@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Telegram Channel Cloner - Main Entry Point
-An improved Telegram channel cloning tool with error handling, logging, and configuration management.
+Clonage de Chaînes Telegram - Point d'Entrée Principal
+Un outil amélioré de clonage de chaînes Telegram avec gestion d'erreurs, journalisation et gestion de configuration.
 """
 
 import argparse
@@ -16,107 +16,107 @@ from logger_setup import setup_logger
 
 
 def parse_arguments():
-    """Parse command line arguments."""
+    """Analyse les arguments de ligne de commande."""
     parser = argparse.ArgumentParser(
-        description="Clone messages from source Telegram channel to target channel",
+        description="Clone les messages d'une chaîne Telegram source vers une chaîne cible",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  python main.py --source @source_channel --target @target_channel
-  python main.py --source source_username --target target_username --limit 100
-  python main.py --source @source_channel --target @target_channel --resume
+Exemples:
+  python main.py --source @chaine_source --target @chaine_cible
+  python main.py --source nom_source --target nom_cible --limit 100
+  python main.py --source @chaine_source --target @chaine_cible --resume
         """
     )
     
     parser.add_argument(
         '--source', '-s',
         required=True,
-        help='Source channel username (with or without @)'
+        help='Nom de la chaîne source (avec ou sans @)'
     )
     
     parser.add_argument(
         '--target', '-t',
         required=True,
-        help='Target channel username (with or without @)'
+        help='Nom de la chaîne cible (avec ou sans @)'
     )
     
     parser.add_argument(
         '--limit', '-l',
         type=int,
         default=None,
-        help='Limit number of messages to clone (default: all messages)'
+        help='Limiter le nombre de messages à cloner (défaut: tous les messages)'
     )
     
     parser.add_argument(
         '--resume', '-r',
         action='store_true',
-        help='Resume from last cloned message'
+        help='Reprendre depuis le dernier message cloné'
     )
     
     parser.add_argument(
         '--delay',
         type=float,
         default=None,
-        help='Delay between messages in seconds (overrides config)'
+        help='Délai entre les messages en secondes (remplace la config)'
     )
     
     parser.add_argument(
         '--batch-size',
         type=int,
         default=None,
-        help='Number of messages to process in each batch (overrides config)'
+        help='Nombre de messages à traiter par lot (remplace la config)'
     )
     
     parser.add_argument(
         '--log-level',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
         default='INFO',
-        help='Set logging level (default: INFO)'
+        help='Définir le niveau de journalisation (défaut: INFO)'
     )
     
     parser.add_argument(
         '--dry-run',
         action='store_true',
-        help='Show what would be cloned without actually sending messages'
+        help='Afficher ce qui serait cloné sans envoyer les messages'
     )
     
     return parser.parse_args()
 
 
 async def main():
-    """Main application entry point."""
+    """Point d'entrée principal de l'application."""
     args = parse_arguments()
     
-    # Setup logging
+    # Configuration de la journalisation
     logger = setup_logger(args.log_level)
     
     try:
-        # Load configuration
+        # Chargement de la configuration
         config = Config()
-        logger.info("Loading configuration...")
+        logger.info("Chargement de la configuration...")
         
-        # Override config with command line arguments if provided
+        # Remplacer la config avec les arguments de ligne de commande si fournis
         if args.delay is not None:
             config.rate_limit_delay = args.delay
         if args.batch_size is not None:
             config.batch_size = args.batch_size
             
-        # Validate configuration
+        # Validation de la configuration
         if not config.validate():
-            logger.error("Configuration validation failed. Please check your .env file.")
+            logger.error("Échec de validation de la configuration. Veuillez vérifier votre fichier .env.")
             return 1
             
-        # Initialize Telegram cloner
+        # Initialisation du clonage Telegram
         cloner = TelegramCloner(config, logger)
         
-        logger.info("Starting Telegram Channel Cloner")
-        logger.info(f"Source Channel: {args.source}")
-        logger.info(f"Target Channel: {args.target}")
-        logger.info(f"Message Limit: {args.limit or 'No limit'}")
-        logger.info(f"Resume Mode: {'Enabled' if args.resume else 'Disabled'}")
-        logger.info(f"Dry Run: {'Enabled' if args.dry_run else 'Disabled'}")
+        logger.info("Démarrage du Clonage de Chaînes Telegram")
+        logger.info(f"Chaîne Source: {args.source}")
+        logger.info(f"Chaîne Cible: {args.target}")
+        logger.info(f"Limite de Messages: {args.limit or 'Aucune limite'}")
+        logger.info(f"Mode Reprise: {'Activé' if args.resume else 'Désactivé'}")
+        logger.info(f"Mode Test: {'Activé' if args.dry_run else 'Désactivé'}")
         
-        # Start cloning process
+        # Démarrage du processus de clonage
         start_time = datetime.now()
         
         success = await cloner.clone_channel(
@@ -131,17 +131,17 @@ async def main():
         duration = end_time - start_time
         
         if success:
-            logger.info(f"Cloning completed successfully in {duration}")
+            logger.info(f"Clonage terminé avec succès en {duration}")
             return 0
         else:
-            logger.error(f"Cloning failed after {duration}")
+            logger.error(f"Échec du clonage après {duration}")
             return 1
             
     except KeyboardInterrupt:
-        logger.info("Operation cancelled by user")
+        logger.info("Opération annulée par l'utilisateur")
         return 130
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        logger.error(f"Erreur inattendue: {str(e)}", exc_info=True)
         return 1
 
 
@@ -150,5 +150,5 @@ if __name__ == '__main__':
         exit_code = asyncio.run(main())
         sys.exit(exit_code)
     except KeyboardInterrupt:
-        print("\nOperation cancelled by user")
+        print("\nOpération annulée par l'utilisateur")
         sys.exit(130)

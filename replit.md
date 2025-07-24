@@ -7,6 +7,7 @@ This is a Python-based Telegram channel cloning application that allows users to
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Preferred language: French - All code, messages, comments, and documentation should be in French.
 
 ## System Architecture
 

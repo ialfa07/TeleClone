@@ -1,6 +1,6 @@
 """
-Configuration management for Telegram Channel Cloner
-Handles environment variables and application settings.
+Gestion de configuration pour le Clonage de Chaînes Telegram
+Gère les variables d'environnement et les paramètres de l'application.
 """
 
 import os
@@ -98,7 +98,7 @@ class Config:
             errors.append("RETRY_DELAY must be non-negative")
         
         if errors:
-            print("Configuration errors:")
+            print("Erreurs de configuration:")
             for error in errors:
                 print(f"  - {error}")
             return False

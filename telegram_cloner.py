@@ -1,6 +1,6 @@
 """
-Telegram Channel Cloner - Core cloning functionality
-Handles the actual cloning of messages between Telegram channels.
+Clonage de Chaînes Telegram - Fonctionnalité de clonage principale
+Gère le clonage réel des messages entre les chaînes Telegram.
 """
 
 import asyncio
@@ -58,9 +58,9 @@ class TelegramCloner:
             True if successful, False otherwise
         """
         try:
-            # Initialize Telegram client
+            # Initialisation du client Telegram
             if not self.config.api_id or not self.config.api_hash:
-                self.logger.error("API credentials are required. Please check your .env file.")
+                self.logger.error("Les identifiants API sont requis. Veuillez vérifier votre fichier .env.")
                 return False
                 
             self.client = TelegramClient(
@@ -70,9 +70,9 @@ class TelegramCloner:
             )
             
             await self.client.start()
-            self.logger.info("Connected to Telegram")
+            self.logger.info("Connecté à Telegram")
             
-            # Get source and target entities
+            # Obtenir les entités source et cible
             source_entity = await self._get_entity(source_channel)
             if not source_entity:
                 return False
@@ -81,52 +81,52 @@ class TelegramCloner:
             if not target_entity:
                 return False
             
-            # Get entity titles safely
+            # Obtenir les titres des entités de manière sécurisée
             source_title = getattr(source_entity, 'title', getattr(source_entity, 'username', str(source_entity.id)))
             target_title = getattr(target_entity, 'title', getattr(target_entity, 'username', str(target_entity.id)))
             
             self.logger.info(f"Source: {source_title}")
-            self.logger.info(f"Target: {target_title}")
+            self.logger.info(f"Cible: {target_title}")
             
-            # Load progress if resuming
+            # Charger la progression si reprise
             if resume:
                 self._load_progress(source_channel, target_channel)
             
-            # Get messages to clone
+            # Obtenir les messages à cloner
             messages = await self._get_messages(source_entity, message_limit)
             if not messages:
-                self.logger.warning("No messages found to clone")
+                self.logger.warning("Aucun message trouvé à cloner")
                 return True
             
             total_messages = len(messages)
-            self.logger.info(f"Found {total_messages} messages to clone")
+            self.logger.info(f"Trouvé {total_messages} messages à cloner")
             
             if dry_run:
-                self.logger.info("DRY RUN MODE - No messages will be sent")
+                self.logger.info("MODE TEST - Aucun message ne sera envoyé")
                 await self._dry_run_analysis(messages)
                 return True
             
-            # Clone messages in batches
+            # Cloner les messages par lots
             start_time = datetime.now()
             success = await self._clone_messages_batch(
                 messages, target_entity, total_messages, start_time
             )
             
-            # Save final progress
+            # Sauvegarder la progression finale
             self._save_progress(source_channel, target_channel, completed=success)
             
-            # Print summary
+            # Afficher le résumé
             self._print_summary(start_time)
             
             return success
             
         except Exception as e:
-            self.logger.error(f"Error during cloning: {str(e)}", exc_info=True)
+            self.logger.error(f"Erreur pendant le clonage: {str(e)}", exc_info=True)
             return False
         finally:
             if self.client:
                 await self.client.disconnect()
-                self.logger.info("Disconnected from Telegram")
+                self.logger.info("Déconnecté de Telegram")
     
     async def _get_entity(self, channel_identifier: str):
         """Get Telegram entity for channel."""
