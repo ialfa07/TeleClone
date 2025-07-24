@@ -291,7 +291,7 @@ def parse_channel_identifier(identifier: str) -> Optional[str]:
     Parse and normalize channel identifier.
     
     Args:
-        identifier: Channel identifier (username, invite link, etc.)
+        identifier: Channel identifier (username, invite link, ID, etc.)
         
     Returns:
         Normalized identifier or None if invalid
@@ -300,6 +300,10 @@ def parse_channel_identifier(identifier: str) -> Optional[str]:
         return None
     
     identifier = identifier.strip()
+    
+    # Handle numeric IDs (negative for channels/supergroups)
+    if identifier.lstrip('-').isdigit():
+        return int(identifier)
     
     # Handle t.me links
     if 't.me/' in identifier:
@@ -316,3 +320,20 @@ def parse_channel_identifier(identifier: str) -> Optional[str]:
         identifier = f"@{identifier}"
     
     return identifier if validate_channel_username(identifier) or identifier.startswith('+') else None
+
+
+def is_channel_id(identifier) -> bool:
+    """
+    Check if identifier is a numeric channel ID.
+    
+    Args:
+        identifier: Channel identifier to check
+        
+    Returns:
+        True if it's a numeric ID, False otherwise
+    """
+    if isinstance(identifier, int):
+        return True
+    if isinstance(identifier, str):
+        return identifier.lstrip('-').isdigit()
+    return False

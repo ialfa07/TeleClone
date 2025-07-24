@@ -5,7 +5,9 @@ Un outil amélioré de clonage de chaînes Telegram avec gestion d'erreurs compl
 ## Fonctionnalités
 
 - **Clonage Complet de Messages**: Clone les messages texte, fichiers médias et contenu mixte
+- **Support IDs de Canaux**: Accepte les noms (@chaine) et IDs numériques (-1001234567890)
 - **Mode Hybride**: Lire avec votre compte, envoyer via un bot (recommandé pour les gros canaux)
+- **Prévention des Doublons**: Évite automatiquement les messages déjà copiés
 - **Gestion d'Erreurs et Récupération**: Gestion d'erreurs robuste avec mécanismes de retry automatiques
 - **Limitation de Taux**: Limitation de taux intégrée pour respecter les limites de l'API Telegram
 - **Suivi de Progression**: Reprendre les transferts interrompus là où ils se sont arrêtés

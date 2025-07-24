@@ -12,7 +12,7 @@ from telethon import TelegramClient, errors
 from telethon.tl.types import Message
 
 from config import Config
-from utils import sanitize_filename, format_duration, calculate_eta
+from utils import sanitize_filename, format_duration, calculate_eta, parse_channel_identifier, is_channel_id
 
 
 class TelegramCloner:
@@ -36,6 +36,10 @@ class TelegramCloner:
         self.messages_processed = 0
         self.messages_sent = 0
         self.messages_failed = 0
+        
+        # Message tracking to avoid duplicates
+        self.copied_messages: set = set()
+        self.progress_key = ""
         
     async def clone_channel(
         self,
@@ -143,25 +147,37 @@ class TelegramCloner:
                 self.logger.info("Bot déconnecté")
     
     async def _get_entity(self, channel_identifier: str):
-        """Get Telegram entity for channel."""
+        """Obtient l'entité Telegram pour un canal (supporte username et ID)."""
         try:
             if not self.client:
-                self.logger.error("Telegram client not initialized")
+                self.logger.error("Client Telegram non initialisé")
                 return None
-                
-            # Clean channel identifier
-            channel_id = channel_identifier.strip()
-            if not channel_id.startswith('@') and not channel_id.startswith('+'):
-                channel_id = f"@{channel_id}"
             
-            entity = await self.client.get_entity(channel_id)
+            # Parse l'identifiant du canal
+            parsed_id = parse_channel_identifier(channel_identifier)
+            if parsed_id is None:
+                self.logger.error(f"Identifiant de canal invalide: {channel_identifier}")
+                return None
+            
+            # Si c'est un ID numérique, l'utiliser directement
+            if is_channel_id(parsed_id):
+                self.logger.info(f"Utilisation de l'ID numérique: {parsed_id}")
+                entity = await self.client.get_entity(parsed_id)
+            else:
+                # Sinon, utiliser comme username
+                entity = await self.client.get_entity(parsed_id)
+                
             return entity
         except errors.UsernameNotOccupiedError:
-            self.logger.error(f"Channel not found: {channel_identifier}")
+            self.logger.error(f"Canal non trouvé: {channel_identifier}")
         except errors.UsernameInvalidError:
-            self.logger.error(f"Invalid channel username: {channel_identifier}")
+            self.logger.error(f"Nom de canal invalide: {channel_identifier}")
+        except errors.ChannelInvalidError:
+            self.logger.error(f"ID de canal invalide: {channel_identifier}")
+        except errors.PeerIdInvalidError:
+            self.logger.error(f"ID de pair invalide: {channel_identifier}")
         except Exception as e:
-            self.logger.error(f"Error getting entity for {channel_identifier}: {str(e)}")
+            self.logger.error(f"Erreur lors de l'obtention de l'entité pour {channel_identifier}: {str(e)}")
         return None
     
     async def _get_messages(self, source_entity, message_limit: Optional[int]) -> List[Message]:
@@ -250,10 +266,17 @@ class TelegramCloner:
         return True
     
     async def _clone_single_message(self, message: Message, target_entity) -> bool:
-        """Clone a single message with retry logic."""
+        """Clone un seul message avec logique de retry et vérification des doublons."""
+        # Vérifie si le message a déjà été copié
+        if message.id in self.copied_messages:
+            self.logger.debug(f"Message {message.id} déjà copié, ignoré")
+            return True
+        
         for attempt in range(self.config.max_retries + 1):
             try:
                 await self._send_message(message, target_entity)
+                # Marque le message comme copié après succès
+                self.copied_messages.add(message.id)
                 return True
             except errors.FloodWaitError as e:
                 wait_time = e.seconds
@@ -362,41 +385,48 @@ class TelegramCloner:
         self.logger.info(f"  Total messages: {len(messages)}")
     
     def _load_progress(self, source_channel: str, target_channel: str):
-        """Load progress from file."""
+        """Charge la progression depuis le fichier."""
+        # Génère une clé unique pour cette paire de canaux
+        source_clean = str(source_channel).replace('@', '').replace('/', '_').replace('-', '_')
+        target_clean = str(target_channel).replace('@', '').replace('/', '_').replace('-', '_')
+        self.progress_key = f"{source_clean}_to_{target_clean}"
+        
         if os.path.exists(self.config.progress_file):
             try:
                 with open(self.config.progress_file, 'r') as f:
                     data = json.load(f)
                 
-                key = f"{source_channel}_{target_channel}"
-                if key in data:
-                    self.progress_data = data[key]
-                    self.logger.info(f"Resuming from message ID: {self.progress_data.get('last_message_id', 0)}")
+                if self.progress_key in data:
+                    self.progress_data = data[self.progress_key]
+                    # Charge les messages déjà copiés
+                    self.copied_messages = set(self.progress_data.get('copied_messages', []))
+                    self.logger.info(f"Reprise depuis le message ID: {self.progress_data.get('last_message_id', 0)}")
+                    self.logger.info(f"Messages déjà copiés: {len(self.copied_messages)}")
             except Exception as e:
-                self.logger.warning(f"Could not load progress: {str(e)}")
+                self.logger.warning(f"Impossible de charger la progression: {str(e)}")
     
     def _save_progress(self, source_channel: str, target_channel: str, completed: bool = False):
-        """Save progress to file."""
+        """Sauvegarde la progression dans le fichier."""
         try:
             data = {}
             if os.path.exists(self.config.progress_file):
                 with open(self.config.progress_file, 'r') as f:
                     data = json.load(f)
             
-            key = f"{source_channel}_{target_channel}"
-            data[key] = {
+            data[self.progress_key] = {
                 **self.progress_data,
                 'completed': completed,
                 'last_update': datetime.now().isoformat(),
                 'messages_processed': self.messages_processed,
                 'messages_sent': self.messages_sent,
-                'messages_failed': self.messages_failed
+                'messages_failed': self.messages_failed,
+                'copied_messages': list(self.copied_messages)
             }
             
             with open(self.config.progress_file, 'w') as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            self.logger.warning(f"Could not save progress: {str(e)}")
+            self.logger.warning(f"Impossible de sauvegarder la progression: {str(e)}")
     
     def _save_progress_data(self, last_message_id: int):
         """Update progress data."""

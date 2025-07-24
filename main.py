@@ -23,21 +23,21 @@ def parse_arguments():
         epilog="""
 Exemples:
   python main.py --source @chaine_source --target @chaine_cible
-  python main.py --source nom_source --target nom_cible --limit 100
-  python main.py --source @chaine_source --target @chaine_cible --resume
+  python main.py --source -1001234567890 --target -1009876543210 --limit 100
+  python main.py --source @chaine_source --target @chaine_cible --resume --use-bot
         """
     )
     
     parser.add_argument(
         '--source', '-s',
         required=True,
-        help='Nom de la chaîne source (avec ou sans @)'
+        help='Nom ou ID de la chaîne source (ex: @chaine, -1001234567890)'
     )
     
     parser.add_argument(
         '--target', '-t',
         required=True,
-        help='Nom de la chaîne cible (avec ou sans @)'
+        help='Nom ou ID de la chaîne cible (ex: @chaine, -1001234567890)'
     )
     
     parser.add_argument(

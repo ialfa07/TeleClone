@@ -104,3 +104,29 @@ The application follows a modular architecture with clear separation of concerns
 - **Resource management**: Efficient memory usage with batch processing
 - **Monitoring**: Detailed progress tracking and logging for operational visibility
 - **Recovery**: Built-in resume functionality for interrupted operations
+
+## Recent Updates (Janvier 2025)
+
+### Support des IDs de Canaux Numériques
+- Implémentation du support complet des IDs Telegram numériques (format -1001234567890)
+- Parser universel d'identifiants supportant usernames, IDs numériques, et liens t.me
+- Gestion d'erreurs spécialisée pour les différents types d'identifiants
+- Mise à jour de l'interface CLI avec exemples d'utilisation des IDs
+
+### Système de Prévention des Doublons
+- Ajout d'un système de suivi des messages déjà copiés dans `copied_messages`
+- Persistance des IDs de messages copiés dans le fichier de progression JSON
+- Vérification automatique avant chaque envoi pour éviter les duplicatas
+- Génération de clés de progression uniques pour chaque paire source/cible
+
+### Améliorations du Mode Hybride
+- Optimisation de la gestion d'erreurs pour les bots Telegram
+- Fallback automatique vers le compte utilisateur en cas d'échec du bot
+- Support des IDs numériques dans le mode hybride
+- Documentation complète avec exemples pratiques dans `exemple_bot.py`
+
+### Améliorations Techniques
+- Refactorisation des fonctions utilitaires dans `utils.py`
+- Tests automatisés des nouvelles fonctionnalités dans `test_nouvelles_fonctionnalites.py`
+- Mise à jour complète de la documentation avec exemples concrets
+- Amélioration des messages d'aide CLI avec formats supportés
