@@ -79,11 +79,34 @@ Cette fonctionnalité innovante permet de :
 
 ## Utilisation
 
-### Mode Standard (compte uniquement) :
+### Mode Interactif (Recommandé pour débutants)
+
 ```bash
-python main.py --source @chaine_source --target @chaine_cible
+# Lance le mode interactif guidé
+python main.py
 ```
 
-### Mode Hybride (recommandé) :
+Le script vous guide étape par étape :
+- Vérification automatique des identifiants API
+- Configuration des canaux avec validation des formats
+- Options de clonage personnalisées
+- Résumé complet et confirmation
+
+### Mode Ligne de Commande
+
+#### Formats de canaux supportés :
+- **Usernames** : `@ma_chaine`, `ma_chaine`
+- **IDs numériques** : `-1001234567890`
+- **Liens t.me** : `https://t.me/ma_chaine`
+
+#### Exemples d'utilisation :
+
 ```bash
+# Mode Standard (compte uniquement)
+python main.py --source @chaine_source --target @chaine_cible
+
+# Avec IDs numériques
+python main.py --source -1001234567890 --target -1009876543210
+
+# Mode Hybride (recommandé pour gros canaux)
 python main.py --source @chaine_source --target @chaine_cible --use-bot
